@@ -1,33 +1,33 @@
 from django.utils import timezone
 from django.db import models
+from django.db.models import Q
 
 
 class League(models.Model):
     LEAGUE_TYPE = [
-        ('Starleague', 'Starleague'),
         ('Proleague', 'Proleague'),
+        ('Starleague', 'Starleague'),
         ('Eventleague', 'Eventleague'),
     ]
 
     name = models.CharField(max_length=30)
-    type = models.CharField(max_length=30, choices=LEAGUE_TYPE, default='Starleague')
+    type = models.CharField(
+        max_length=30, choices=LEAGUE_TYPE, default='Proleague')
 
     class Meta:
         ordering = ['name']
 
+    def __str__(self):
+        return f'{self.type} - {self.name}'
 
-class Player(models.Model):
-    RACE_LIST = [
-        ('T', 'Terran'),
-        ('P', 'Protoss'),
-        ('Z', 'Zerg'),
-        ('R', 'Random')
+
+class Map(models.Model):
+    MAP_TYPE = [
+        ('Melee', 'Melee'),
+        ('Top-And-Bottom', 'Top and Bottom'),
     ]
-
     name = models.CharField(max_length=30)
-    most_race = models.CharField(max_length=10, choices=RACE_LIST, default='R')
-    signup_date = models.DateField(default=timezone.now)
-    career = models.TextField(max_length=1000, default="")
+    type = models.CharField(max_length=20, choices=MAP_TYPE, default='Melee')
 
     class Meta:
         ordering = ['name']
@@ -36,35 +36,61 @@ class Player(models.Model):
         return self.name
 
 
-# class Map(models.Model):
-#     MAP_TYPE = [
-#         ('Melee', 'Melee'),
-#         ('Top-And-Bottom', 'Top and Bottom'),
-#     ]
-#     name = models.CharField(max_length=30)
-#     type = models.CharField(max_length=10, choices=MAP_TYPE, default='Melee')
+class Player(models.Model):
+    RACE_LIST = [
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
+        ('R', 'Random')
+    ]
 
-#     class Meta:
-#         ordering = ['name']
+    name = models.CharField(max_length=30)
+    most_race = models.CharField(max_length=10, choices=RACE_LIST, default='R')
+    signup_date = models.DateField(default=timezone.now)
+    career = models.TextField(
+        max_length=1000, default='He has strength, not shown...', blank=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 
-# class GameResult(models.Model):
-#     # 21.03.23	HPL S6 Round17 우수만 vs s-class set 3	haha	t	crazybird	p	네오실피드	crazybird	패	2 연패	-2	6
-#     # 21.03.23	HPL S6 Round17 우수만 vs s-class set 3	haha	t	crazybird	p	네오실피드	haha	승	1 연승	1	4
+class GameResult(models.Model):
+    RACE_LIST = [
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
+    ]
 
-#     league = models.ForeignKey(League, on_delete=models.CASCADE)
-#     round = models.CharField(max_length=30)
-#     date = models.DateField(default=timezone.now)
-#     # player_a = 
-#     # player_b = 
-#     # winner = 
-#     map = models.ForeignKey(Map, on_delete=models.CASCADE)
-#     # player_a_race = 
-#     # player_b_race = 
+    league = models.ForeignKey(League, on_delete=models.CASCADE)
+    round = models.CharField(max_length=30)
+    title = models.CharField(max_length=50)
+    date = models.DateField(default=timezone.now)
 
-#     class Meta:
-#         ordering = (
-#             '-date',
-#             '-league',
-#             '-round'
-#         )
+    winners = models.ManyToManyField(Player, related_name='winners')
+    losers = models.ManyToManyField(Player, related_name='losers')
+
+    map = models.ForeignKey(Map, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = (
+            '-date',
+            '-league',
+            '-round',
+            '-title'
+        )
+
+    def __str__(self):
+        return f'{self.date} | {self.league} - {self.round} - {self.title} '
+
+    @classmethod
+    def get_player_game_result(cls, pk):
+        return cls.objects.select_related(
+            'map', 'league'
+        ).prefetch_related(
+            'winners', 'losers'
+        ).filter(
+            Q(winners__id__in=[pk]) | Q(losers__id__in=[pk])
+        )

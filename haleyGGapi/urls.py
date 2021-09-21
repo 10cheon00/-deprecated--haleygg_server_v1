@@ -1,8 +1,9 @@
 from django.urls import path
 
-from haleyGGapi.views import PlayerView
-
+from haleyGGapi.views import PlayerDetailView
+from haleyGGapi.views import PlayerGameResultListView
 
 urlpatterns = [
-    path('player/', PlayerView.as_view())
+    path('players/<int:pk>', PlayerDetailView.as_view()),
+    path('players/<int:pk>/game-results/', PlayerGameResultListView.as_view() ),
 ]

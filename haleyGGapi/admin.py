@@ -1,3 +1,12 @@
 from django.contrib import admin
 
-# Register your models here.
+from haleyGGapi.models import GameResult
+from haleyGGapi.models import Player
+from haleyGGapi.models import Map
+from haleyGGapi.models import League
+
+
+admin.site.register(GameResult)
+admin.site.register(Player)
+admin.site.register(Map)
+admin.site.register(League)
