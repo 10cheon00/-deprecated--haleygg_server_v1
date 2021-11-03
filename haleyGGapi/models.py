@@ -36,7 +36,7 @@ class Map(models.Model):
         return self.name
 
 
-class Player(models.Model):
+class Profile(models.Model):
     RACE_LIST = [
         ('P', 'Protoss'),
         ('T', 'Terran'),
@@ -45,7 +45,7 @@ class Player(models.Model):
     ]
 
     name = models.CharField(max_length=30)
-    most_race = models.CharField(max_length=10, choices=RACE_LIST, default='R')
+    most_race = models.CharField(max_length=5, choices=RACE_LIST, default='R')
     signup_date = models.DateField(default=timezone.now)
     career = models.TextField(
         max_length=1000, default='He has strength, not shown...', blank=True)
@@ -55,6 +55,25 @@ class Player(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, *kwargs)
+        Player(user=self, race="P").save()
+        Player(user=self, race="T").save()
+        Player(user=self, race="Z").save()
+
+
+class Player(models.Model):
+    RACE_LIST = [
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
+    ]
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    race = models.CharField(max_length=5, choices=RACE_LIST, default="P")
+
+    def __str__(self):
+        return f'{self.user} ({self.race})'
 
 
 class GameResult(models.Model):
@@ -65,8 +84,10 @@ class GameResult(models.Model):
     ]
 
     league = models.ForeignKey(League, on_delete=models.CASCADE)
+    # TODO : below fields will be changed to a description.
     round = models.CharField(max_length=30)
     title = models.CharField(max_length=50)
+
     date = models.DateField(default=timezone.now)
 
     winners = models.ManyToManyField(Player, related_name='winners')
