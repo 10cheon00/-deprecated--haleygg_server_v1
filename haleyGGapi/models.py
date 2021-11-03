@@ -38,14 +38,14 @@ class Map(models.Model):
 
 class Profile(models.Model):
     RACE_LIST = [
-        ('P', 'Protoss'),
-        ('T', 'Terran'),
-        ('Z', 'Zerg'),
-        ('R', 'Random')
+        ('protoss', 'Protoss'),
+        ('terran', 'Terran'),
+        ('zerg', 'Zerg'),
+        ('random', "Random")
     ]
 
     name = models.CharField(max_length=30)
-    most_race = models.CharField(max_length=5, choices=RACE_LIST, default='R')
+    most_race = models.CharField(max_length=10, choices=RACE_LIST, default='R')
     signup_date = models.DateField(default=timezone.now)
     career = models.TextField(
         max_length=1000, default='He has strength, not shown...', blank=True)
@@ -58,35 +58,33 @@ class Profile(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, *kwargs)
-        Player(user=self, race="P").save()
-        Player(user=self, race="T").save()
-        Player(user=self, race="Z").save()
+        Player(user=self, race="protoss").save()
+        Player(user=self, race="terran").save()
+        Player(user=self, race="zerg").save()
 
 
 class Player(models.Model):
     RACE_LIST = [
-        ('P', 'Protoss'),
-        ('T', 'Terran'),
-        ('Z', 'Zerg'),
+        ('protoss', 'Protoss'),
+        ('terran', 'Terran'),
+        ('zerg', 'Zerg'),
     ]
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
-    race = models.CharField(max_length=5, choices=RACE_LIST, default="P")
+    race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
 
     def __str__(self):
         return f'{self.user} ({self.race})'
 
 
 class GameResult(models.Model):
-    RACE_LIST = [
-        ('P', 'Protoss'),
-        ('T', 'Terran'),
-        ('Z', 'Zerg'),
-    ]
-
     league = models.ForeignKey(League, on_delete=models.CASCADE)
-    # TODO : below fields will be changed to a description.
-    round = models.CharField(max_length=30)
-    title = models.CharField(max_length=50)
+    description = models.CharField(max_length=50, default='')
+    game_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('melee', 'Melee'),
+            ('top_and_bottom', 'Top And Bottom')],
+        default='melee')
 
     date = models.DateField(default=timezone.now)
 
@@ -99,12 +97,11 @@ class GameResult(models.Model):
         ordering = (
             '-date',
             '-league',
-            '-round',
-            '-title'
+            'description'
         )
 
     def __str__(self):
-        return f'{self.date} | {self.league} - {self.round} - {self.title} '
+        return f'{self.date} | {self.league} - {self.description} '
 
     @classmethod
     def get_player_game_result(cls, pk):
