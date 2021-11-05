@@ -55,7 +55,7 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, *kwargs)
         Player(user=self, race="protoss").save()
@@ -77,6 +77,7 @@ class Player(models.Model):
 
 
 class GameResult(models.Model):
+    date = models.DateField(default=timezone.now)
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     description = models.CharField(max_length=50, default='')
     game_type = models.CharField(
@@ -85,8 +86,6 @@ class GameResult(models.Model):
             ('melee', 'Melee'),
             ('top_and_bottom', 'Top And Bottom')],
         default='melee')
-
-    date = models.DateField(default=timezone.now)
 
     winners = models.ManyToManyField(Player, related_name='winners')
     losers = models.ManyToManyField(Player, related_name='losers')
@@ -104,11 +103,16 @@ class GameResult(models.Model):
         return f'{self.date} | {self.league} - {self.description} '
 
     @classmethod
-    def get_player_game_result(cls, pk):
+    def get_player_game_result(cls, name):
+
+        # find 'Player id' with name, not 'Profile id'
+        players_id = Player.objects.select_related('user').filter(
+            user__name=name).values('id')
+
         return cls.objects.select_related(
-            'map', 'league'
+            'league', 'map'
         ).prefetch_related(
-            'winners', 'losers'
+            'winners', 'losers', 'winners__user', 'losers__user'
         ).filter(
-            Q(winners__id__in=[pk]) | Q(losers__id__in=[pk])
-        )
+            Q(winners__id__in=players_id) | Q(losers__id__in=players_id)
+        ).distinct()
