@@ -59,9 +59,9 @@ class RetrievePlayerInformationView(APIView):
             ProfileSerializer(instance=profile, read_only=True).data
         serialized_data['game_results'] = \
             GameResultSerializer(instance=game_results, many=True, read_only=True).data
-        print("clear")
         # TODO 
         # Should be added Elo field.
+        
         return serialized_data
 
     def get(self, *args, **kwargs):

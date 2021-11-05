@@ -96,6 +96,7 @@ class GameResult(models.Model):
         ordering = (
             '-date',
             '-league',
+            '-id',
             'description'
         )
 
@@ -116,3 +117,11 @@ class GameResult(models.Model):
         ).filter(
             Q(winners__id__in=players_id) | Q(losers__id__in=players_id)
         ).distinct()
+
+
+class Elo(models.Model):
+    date = models.DateField(default=timezone.now)
+    
+
+    class Meta:
+        ordering = ('-date',)

@@ -16,5 +16,5 @@ router.register('profile', ProfileReadOnlyViewSet, basename='profile')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('player/<str:name>', RetrievePlayerInformationView.as_view())
+    path('player/<str:name>/', RetrievePlayerInformationView.as_view())
 ]
