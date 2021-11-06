@@ -28,7 +28,6 @@ class ProfileReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
 
-
 class GameResultReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = GameResult.objects.select_related(
         'league', 'map'
@@ -52,13 +51,13 @@ class RetrievePlayerInformationView(APIView):
     def get_object(self, player_name):
         serialized_data = {}
 
-        profile = get_object_or_404(Profile, name=player_name)
-        game_results = GameResult.get_player_game_result(player_name)
+        profile = get_object_or_404(Profile, name__iexact=player_name)
+        game_result_list = GameResult.get_player_game_result(profile.name)
 
         serialized_data['profile'] = \
             ProfileSerializer(instance=profile, read_only=True).data
-        serialized_data['game_results'] = \
-            GameResultSerializer(instance=game_results, many=True, read_only=True).data
+        serialized_data['game_result_list'] = \
+            GameResultSerializer(instance=game_result_list, many=True, read_only=True).data
         # TODO 
         # Should be added Elo field.
         
