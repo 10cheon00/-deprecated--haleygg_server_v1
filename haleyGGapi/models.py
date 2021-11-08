@@ -38,10 +38,10 @@ class Map(models.Model):
 
 class Profile(models.Model):
     RACE_LIST = [
-        ('protoss', 'Protoss'),
-        ('terran', 'Terran'),
-        ('zerg', 'Zerg'),
-        ('random', "Random")
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
+        ('R', "Random")
     ]
 
     name = models.CharField(max_length=30)
@@ -58,16 +58,16 @@ class Profile(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, *kwargs)
-        Player(user=self, race="protoss").save()
-        Player(user=self, race="terran").save()
-        Player(user=self, race="zerg").save()
+        Player(user=self, race="P").save()
+        Player(user=self, race="T").save()
+        Player(user=self, race="Z").save()
 
 
 class Player(models.Model):
     RACE_LIST = [
-        ('protoss', 'Protoss'),
-        ('terran', 'Terran'),
-        ('zerg', 'Zerg'),
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
     ]
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
@@ -92,12 +92,14 @@ class GameResult(models.Model):
 
     map = models.ForeignKey(Map, on_delete=models.CASCADE)
 
+    remarks = models.CharField(max_length=20, default="")
+
     class Meta:
         ordering = (
             '-date',
             '-league',
             '-id',
-            'description'
+            '-description'
         )
 
     def __str__(self):

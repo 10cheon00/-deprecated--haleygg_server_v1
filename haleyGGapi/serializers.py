@@ -52,5 +52,6 @@ class GameResultSerializer(ModelSerializer):
             'game_type',
             'winners',
             'losers',
-            'map'
+            'map',
+            'remarks'
         )
