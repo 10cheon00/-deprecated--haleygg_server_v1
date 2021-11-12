@@ -29,7 +29,7 @@ class ProfileSerializer(ModelSerializer):
 
 
 class PlayerSerializer(ModelSerializer):
-    name = serializers.CharField(source='user.name')
+    name = serializers.CharField(source='profile.name')
 
     class Meta:
         model = Player

@@ -2,6 +2,8 @@ from django.utils import timezone
 from django.db import models
 from django.db.models import Q
 
+from haleyGGapi.managers import GameResultFilterManager
+
 
 class League(models.Model):
     LEAGUE_TYPE = [
@@ -50,6 +52,12 @@ class Profile(models.Model):
     career = models.TextField(
         max_length=1000, default='He has strength, not shown...', blank=True)
 
+    # TODO
+    # 랭킹 정보를 계산하기 위해,
+    # 이 곳에 승리 수, 경기 수 등등을 저장해야 한다. 
+    # 매 전적 Create, Update, Delete시 이 곳에 있는 데이터를 
+    # 수정해야 한다. GameResult 모델에서 담당하면 되겠다.
+
     class Meta:
         ordering = ['name']
 
@@ -69,11 +77,11 @@ class Player(models.Model):
         ('T', 'Terran'),
         ('Z', 'Zerg'),
     ]
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
     race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
 
     def __str__(self):
-        return f'{self.user} ({self.race})'
+        return f'{self.profile} ({self.race})'
 
 
 class GameResult(models.Model):
@@ -92,7 +100,10 @@ class GameResult(models.Model):
 
     map = models.ForeignKey(Map, on_delete=models.CASCADE)
 
-    remarks = models.CharField(max_length=20, default="")
+    remarks = models.CharField(max_length=20, default="", blank=True)
+
+    objects = models.Manager()
+    filter = GameResultFilterManager()
 
     class Meta:
         ordering = (
@@ -105,25 +116,12 @@ class GameResult(models.Model):
     def __str__(self):
         return f'{self.date} | {self.league} - {self.description} '
 
-    @classmethod
-    def get_player_game_result(cls, name):
-
-        # find 'Player id' with name, not 'Profile id'
-        players_id = Player.objects.select_related('user').filter(
-            user__name=name).values('id')
-
-        return cls.objects.select_related(
-            'league', 'map'
-        ).prefetch_related(
-            'winners', 'losers', 'winners__user', 'losers__user'
-        ).filter(
-            Q(winners__id__in=players_id) | Q(losers__id__in=players_id)
-        ).distinct()
-
 
 class Elo(models.Model):
     date = models.DateField(default=timezone.now)
     
+    # TODO
+    # elo값과 연결된 profile을 필드로 갖고 있어야?
 
     class Meta:
         ordering = ('-date',)

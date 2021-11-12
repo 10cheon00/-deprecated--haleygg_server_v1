@@ -28,12 +28,9 @@ class ProfileReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
 
+
 class GameResultReadOnlyViewSet(ReadOnlyModelViewSet):
-    queryset = GameResult.objects.select_related(
-        'league', 'map'
-    ).prefetch_related(
-        'winners__user', 'losers__user', 'winners__user', 'losers__user'
-    ).all()
+    queryset = GameResult.filter.get_queryset()
     serializer_class = GameResultSerializer
 
 
@@ -48,24 +45,39 @@ To show data, do not use above viewset, use PlayerInformationRetrieveView.
 
 
 class RetrievePlayerInformationView(APIView):
-    def get_object(self, player_name):
-        serialized_data = {}
-
-        profile = get_object_or_404(Profile, name__iexact=player_name)
-        game_result_list = GameResult.get_player_game_result(profile.name)
-
-        serialized_data['profile'] = \
-            ProfileSerializer(instance=profile, read_only=True).data
-        serialized_data['game_result_list'] = \
-            GameResultSerializer(instance=game_result_list, many=True, read_only=True).data
-        # TODO 
-        # Should be added Elo field.
-        
-        return serialized_data
-
     def get(self, *args, **kwargs):
         # must be return profile, gameresult, elo.
         # should use serializer. all return values must be serializer.
-        player_name = kwargs['name']
-        serialized_data = self.get_object(player_name)
-        return Response(serialized_data)
+        self.serialized_data = {}
+        self.player_name = kwargs['name']
+        self.opponent_name = self.request.query_params.get('versus')
+
+        self.get_profile()
+        self.get_information()
+
+        return Response(self.serialized_data)
+
+    def get_profile(self):
+        player_profile = get_object_or_404(
+            Profile, 
+            name__iexact=self.player_name
+        )
+        profile_serializer = ProfileSerializer(instance=player_profile).data
+        self.serialized_data['player_profile'] = profile_serializer
+
+    def get_information(self):
+        if self.opponent_name:
+            self.game_result_list = \
+                GameResult.filter.get_player_data_related_with_opponent(
+                    self.player_name, self.opponent_name
+                )
+        else:
+            self.game_result_list = \
+                GameResult.filter.get_player_data(self.player_name)
+    
+        game_result_serializer = GameResultSerializer(
+            instance=self.game_result_list,
+            many=True,
+            read_only=True
+        ).data
+        self.serialized_data['game_result_list'] = game_result_serializer
