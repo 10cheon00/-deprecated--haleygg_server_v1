@@ -1,3 +1,4 @@
+from typing import overload
 from django.utils import timezone
 from django.db import models
 from django.db.models import Q
@@ -66,22 +67,6 @@ class Profile(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, *kwargs)
-        Player(user=self, race="P").save()
-        Player(user=self, race="T").save()
-        Player(user=self, race="Z").save()
-
-
-class Player(models.Model):
-    RACE_LIST = [
-        ('P', 'Protoss'),
-        ('T', 'Terran'),
-        ('Z', 'Zerg'),
-    ]
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
-    race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
-
-    def __str__(self):
-        return f'{self.profile} ({self.race})'
 
 
 class GameResult(models.Model):
@@ -94,12 +79,7 @@ class GameResult(models.Model):
             ('melee', 'Melee'),
             ('top_and_bottom', 'Top And Bottom')],
         default='melee')
-
-    winners = models.ManyToManyField(Player, related_name='winners')
-    losers = models.ManyToManyField(Player, related_name='losers')
-
     map = models.ForeignKey(Map, on_delete=models.CASCADE)
-
     remarks = models.CharField(max_length=20, default="", blank=True)
 
     objects = models.Manager()
@@ -114,7 +94,30 @@ class GameResult(models.Model):
         )
 
     def __str__(self):
-        return f'{self.date} | {self.league} - {self.description} '
+        return f'{self.date} | {self.league} - {self.description}'
+
+
+class Player(models.Model):
+    RACE_LIST = [
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
+    ]
+    game_result = models.ForeignKey(
+        GameResult, 
+        on_delete=models.CASCADE,
+        related_name="players",
+        null=True)
+    profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE, 
+        null=True,
+        related_name="players")
+    race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
+    win_state = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.profile} ({self.race}) | {self.game_result}'
 
 
 class Elo(models.Model):

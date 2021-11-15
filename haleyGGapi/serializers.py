@@ -33,14 +33,13 @@ class PlayerSerializer(ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ('id', 'name', 'race')
+        fields = ('name', 'race', 'win_state')
 
 
 class GameResultSerializer(ModelSerializer):
     league = serializers.CharField(source='league.name')
     map = serializers.CharField(source='map.name')
-    winners = PlayerSerializer(many=True, read_only=True)
-    losers = PlayerSerializer(many=True, read_only=True)
+    players = PlayerSerializer(many=True, read_only=True)
 
     class Meta:
         model = GameResult
@@ -50,8 +49,7 @@ class GameResultSerializer(ModelSerializer):
             'league',
             'description',
             'game_type',
-            'winners',
-            'losers',
             'map',
-            'remarks'
+            'remarks',
+            'players'
         )
