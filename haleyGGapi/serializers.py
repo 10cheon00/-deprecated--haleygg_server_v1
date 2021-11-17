@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from rest_framework.serializers import Serializer
 from rest_framework.serializers import ModelSerializer
-from rest_framework.serializers import ListSerializer
 
 from haleyGGapi.models import League
 from haleyGGapi.models import Map
@@ -53,3 +52,12 @@ class GameResultSerializer(ModelSerializer):
             'remarks',
             'players'
         )
+
+
+class RankSerializer(Serializer):
+    player_name = serializers.CharField(max_length=30)
+    game_count_rank = serializers.IntegerField()
+    win_count_rank = serializers.IntegerField()
+    win_versus_protoss_rank = serializers.IntegerField()
+    win_versus_terran_rank = serializers.IntegerField()
+    win_versus_zerg_rank = serializers.IntegerField()

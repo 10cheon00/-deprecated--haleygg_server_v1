@@ -1,5 +1,6 @@
 from django.db.models import Manager
 from django.db.models import Q
+from django.db.models import Count
 
 class GameResultFilterManager(Manager):
     def get_queryset(self):

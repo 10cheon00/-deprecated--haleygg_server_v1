@@ -1,4 +1,5 @@
-from django.urls import path, include
+from django.urls import path
+from django.urls import include
 from rest_framework import routers
 
 from haleyGGapi.views import LeagueReadOnlyViewSet

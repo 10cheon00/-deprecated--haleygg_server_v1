@@ -1,7 +1,10 @@
-from typing import overload
-from django.utils import timezone
 from django.db import models
+from django.db.models import Count
 from django.db.models import Q
+from django.db.models.expressions import F
+from django.db.models.expressions import Window
+from django.db.models.functions import Rank
+from django.utils import timezone
 
 from haleyGGapi.managers import GameResultFilterManager
 
@@ -103,21 +106,66 @@ class Player(models.Model):
         ('T', 'Terran'),
         ('Z', 'Zerg'),
     ]
-    game_result = models.ForeignKey(
-        GameResult, 
-        on_delete=models.CASCADE,
-        related_name="players",
-        null=True)
     profile = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE, 
         null=True,
         related_name="players")
+    game_result = models.ForeignKey(
+        GameResult, 
+        on_delete=models.CASCADE,
+        related_name="players",
+        null=True)
+    opponent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True
+    )
     race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
     win_state = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = (
+            "-id",
+        )
+
     def __str__(self):
+        Player.objects.filter(
+            win_state=True
+        ).values('profile__name').annotate(
+            win_count=Count("id")
+        )
         return f'{self.profile} ({self.race}) | {self.game_result}'
+
+    @classmethod
+    def get_rank(cls):
+        return cls.objects.values('profile__name').order_by().annotate(
+            game_count=Count('id'),
+            win_count=Count('id', filter=Q(win_state=True)),
+            win_versus_protoss_count=Count(
+                'id', filter=Q(win_state=True) & Q(opponent__race='P')),
+            win_versus_terran_count=Count(
+                'id', filter=Q(win_state=True) & Q(opponent__race='T')),
+            win_versus_zerg_count=Count(
+                'id', filter=Q(win_state=True) & Q(opponent__race='Z'))
+        ).annotate(
+            game_count_rank=Window(expression=Rank(),order_by=F('game_count').desc()),
+            win_count_rank=Window(expression=Rank(),order_by=F('win_count').desc()),
+            win_versus_protoss_rank=Window(
+                expression=Rank(),order_by=F('win_versus_protoss_count').desc()),
+            win_versus_terran_rank=Window(
+                expression=Rank(),order_by=F('win_versus_terran_count').desc()),
+            win_versus_zerg_rank=Window(
+                expression=Rank(),order_by=F('win_versus_zerg_count').desc()),
+        ).values(
+            'game_count_rank',
+            'win_count_rank',
+            'win_versus_protoss_rank',
+            'win_versus_terran_rank',
+            'win_versus_zerg_rank',
+            player_name=F('profile__name')
+        )
+
 
 
 class Elo(models.Model):
