@@ -1,6 +1,12 @@
-from django.utils import timezone
 from django.db import models
+from django.db.models import Count
 from django.db.models import Q
+from django.db.models.expressions import F
+from django.db.models.expressions import Window
+from django.db.models.functions import Rank
+from django.utils import timezone
+
+from haleyGGapi.managers import GameResultRelationshipManager
 
 
 class League(models.Model):
@@ -36,12 +42,12 @@ class Map(models.Model):
         return self.name
 
 
-class Player(models.Model):
+class Profile(models.Model):
     RACE_LIST = [
         ('P', 'Protoss'),
         ('T', 'Terran'),
         ('Z', 'Zerg'),
-        ('R', 'Random')
+        ('R', "Random")
     ]
 
     name = models.CharField(max_length=30)
@@ -50,47 +56,136 @@ class Player(models.Model):
     career = models.TextField(
         max_length=1000, default='He has strength, not shown...', blank=True)
 
+    # TODO
+    # 랭킹 정보를 계산하기 위해,
+    # 이 곳에 승리 수, 경기 수 등등을 저장해야 한다. 
+    # 매 전적 Create, Update, Delete시 이 곳에 있는 데이터를 
+    # 수정해야 한다. GameResult 모델에서 담당하면 되겠다.
+
     class Meta:
         ordering = ['name']
 
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        super().save(*args, *kwargs)
+
 
 class GameResult(models.Model):
-    RACE_LIST = [
-        ('P', 'Protoss'),
-        ('T', 'Terran'),
-        ('Z', 'Zerg'),
-    ]
-
-    league = models.ForeignKey(League, on_delete=models.CASCADE)
-    round = models.CharField(max_length=30)
-    title = models.CharField(max_length=50)
     date = models.DateField(default=timezone.now)
-
-    winners = models.ManyToManyField(Player, related_name='winners')
-    losers = models.ManyToManyField(Player, related_name='losers')
-
+    league = models.ForeignKey(League, on_delete=models.CASCADE)
+    description = models.CharField(max_length=50, default='')
+    game_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('melee', 'Melee'),
+            ('top_and_bottom', 'Top And Bottom')],
+        default='melee')
     map = models.ForeignKey(Map, on_delete=models.CASCADE)
+    remarks = models.CharField(max_length=20, default="", blank=True)
+
+    objects = models.Manager()
+    relationship = GameResultRelationshipManager()
 
     class Meta:
         ordering = (
             '-date',
             '-league',
-            '-round',
-            '-title'
+            '-id',
+            '-description'
         )
 
     def __str__(self):
-        return f'{self.date} | {self.league} - {self.round} - {self.title} '
+        return f'{self.date} | {self.league} - {self.description}'
+
+
+class Player(models.Model):
+    RACE_LIST = [
+        ('P', 'Protoss'),
+        ('T', 'Terran'),
+        ('Z', 'Zerg'),
+    ]
+    profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE, 
+        null=True,
+        related_name="players")
+    game_result = models.ForeignKey(
+        GameResult, 
+        on_delete=models.CASCADE,
+        related_name="players",
+        null=True)
+    opponent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True
+    )
+    race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
+    win_state = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = (
+            "-id",
+        )
+
+    def __str__(self):
+        Player.objects.filter(
+            win_state=True
+        ).values('profile__name').annotate(
+            win_count=Count("id")
+        )
+        return f'{self.profile} ({self.race}) | {self.game_result}'
 
     @classmethod
-    def get_player_game_result(cls, pk):
-        return cls.objects.select_related(
-            'map', 'league'
-        ).prefetch_related(
-            'winners', 'losers'
-        ).filter(
-            Q(winners__id__in=[pk]) | Q(losers__id__in=[pk])
+    def get_rank(cls, league_name=None):
+        queryset = cls.objects.all()
+        if league_name:
+            queryset = cls.objects.filter(
+                game_result__league__name__iexact=league_name
+            )
+        return queryset.values('profile__name').order_by().annotate(
+            game_count=Count('id'),
+            win_count=Count('id', filter=Q(win_state=True)),
+            win_versus_protoss_count=Count(
+                'id', filter=Q(win_state=True) & Q(opponent__race='P')),
+            win_versus_terran_count=Count(
+                'id', filter=Q(win_state=True) & Q(opponent__race='T')),
+            win_versus_zerg_count=Count(
+                'id', filter=Q(win_state=True) & Q(opponent__race='Z')),
+            # top_and_bottom_game_count=Count('id', 
+            #     filter=Q(game_result__game_type='top_and_bottom')),
+            top_and_bottom_win_count=Count('id', 
+                filter=Q(game_result__game_type='top_and_bottom') &
+                    Q(win_state=True))
+        ).annotate(
+            game_count_rank=Window(expression=Rank(), order_by=F('game_count').desc()),
+            win_count_rank=Window(expression=Rank(), order_by=F('win_count').desc()),
+            win_versus_protoss_rank=Window(
+                expression=Rank(), order_by=F('win_versus_protoss_count').desc()),
+            win_versus_terran_rank=Window(
+                expression=Rank(), order_by=F('win_versus_terran_count').desc()),
+            win_versus_zerg_rank=Window(
+                expression=Rank(), order_by=F('win_versus_zerg_count').desc()),
+            top_and_bottom_win_rank=Window(
+                expression=Rank(), order_by=F('top_and_bottom_win_count').desc())
+        ).values(
+            'game_count_rank',
+            'win_count_rank',
+            'win_versus_protoss_rank',
+            'win_versus_terran_rank',
+            'win_versus_zerg_rank',
+            'top_and_bottom_win_rank',
+            player_name=F('profile__name')
         )
+
+
+
+class Elo(models.Model):
+    date = models.DateField(default=timezone.now)
+    
+    # TODO
+    # elo값과 연결된 profile을 필드로 갖고 있어야?
+
+    class Meta:
+        ordering = ('-date',)
