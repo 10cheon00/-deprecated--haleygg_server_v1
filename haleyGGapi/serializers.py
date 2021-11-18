@@ -61,3 +61,4 @@ class RankSerializer(Serializer):
     win_versus_protoss_rank = serializers.IntegerField()
     win_versus_terran_rank = serializers.IntegerField()
     win_versus_zerg_rank = serializers.IntegerField()
+    top_and_bottom_win_rank = serializers.IntegerField()

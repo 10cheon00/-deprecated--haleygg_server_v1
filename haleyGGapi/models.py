@@ -6,7 +6,7 @@ from django.db.models.expressions import Window
 from django.db.models.functions import Rank
 from django.utils import timezone
 
-from haleyGGapi.managers import GameResultFilterManager
+from haleyGGapi.managers import GameResultRelationshipManager
 
 
 class League(models.Model):
@@ -86,7 +86,7 @@ class GameResult(models.Model):
     remarks = models.CharField(max_length=20, default="", blank=True)
 
     objects = models.Manager()
-    filter = GameResultFilterManager()
+    relationship = GameResultRelationshipManager()
 
     class Meta:
         ordering = (
@@ -138,8 +138,13 @@ class Player(models.Model):
         return f'{self.profile} ({self.race}) | {self.game_result}'
 
     @classmethod
-    def get_rank(cls):
-        return cls.objects.values('profile__name').order_by().annotate(
+    def get_rank(cls, league_name=None):
+        queryset = cls.objects.all()
+        if league_name:
+            queryset = cls.objects.filter(
+                game_result__league__name__iexact=league_name
+            )
+        return queryset.values('profile__name').order_by().annotate(
             game_count=Count('id'),
             win_count=Count('id', filter=Q(win_state=True)),
             win_versus_protoss_count=Count(
@@ -147,22 +152,30 @@ class Player(models.Model):
             win_versus_terran_count=Count(
                 'id', filter=Q(win_state=True) & Q(opponent__race='T')),
             win_versus_zerg_count=Count(
-                'id', filter=Q(win_state=True) & Q(opponent__race='Z'))
+                'id', filter=Q(win_state=True) & Q(opponent__race='Z')),
+            # top_and_bottom_game_count=Count('id', 
+            #     filter=Q(game_result__game_type='top_and_bottom')),
+            top_and_bottom_win_count=Count('id', 
+                filter=Q(game_result__game_type='top_and_bottom') &
+                    Q(win_state=True))
         ).annotate(
-            game_count_rank=Window(expression=Rank(),order_by=F('game_count').desc()),
-            win_count_rank=Window(expression=Rank(),order_by=F('win_count').desc()),
+            game_count_rank=Window(expression=Rank(), order_by=F('game_count').desc()),
+            win_count_rank=Window(expression=Rank(), order_by=F('win_count').desc()),
             win_versus_protoss_rank=Window(
-                expression=Rank(),order_by=F('win_versus_protoss_count').desc()),
+                expression=Rank(), order_by=F('win_versus_protoss_count').desc()),
             win_versus_terran_rank=Window(
-                expression=Rank(),order_by=F('win_versus_terran_count').desc()),
+                expression=Rank(), order_by=F('win_versus_terran_count').desc()),
             win_versus_zerg_rank=Window(
-                expression=Rank(),order_by=F('win_versus_zerg_count').desc()),
+                expression=Rank(), order_by=F('win_versus_zerg_count').desc()),
+            top_and_bottom_win_rank=Window(
+                expression=Rank(), order_by=F('top_and_bottom_win_count').desc())
         ).values(
             'game_count_rank',
             'win_count_rank',
             'win_versus_protoss_rank',
             'win_versus_terran_rank',
             'win_versus_zerg_rank',
+            'top_and_bottom_win_rank',
             player_name=F('profile__name')
         )
 

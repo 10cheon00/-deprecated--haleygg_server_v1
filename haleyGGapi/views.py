@@ -1,8 +1,9 @@
-from os import read
-from django.db.models.functions.window import Rank
+from os import name
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 
 from haleyGGapi.serializers import LeagueSerializer
@@ -20,21 +21,51 @@ from haleyGGapi.models import GameResult
 class LeagueReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = League.objects.all()
     serializer_class = LeagueSerializer
+    lookup_field = 'name'
 
 
 class MapReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Map.objects.all()
     serializer_class = MapSerializer
+    lookup_field = 'name'
 
 
 class ProfileReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    lookup_field = 'name'
 
 
-class GameResultReadOnlyViewSet(ReadOnlyModelViewSet):
-    queryset = GameResult.filter.get_queryset()
+class GameResultListAPIView(GenericAPIView):
+    queryset = GameResult.relationship.get_queryset()
     serializer_class = GameResultSerializer
+
+    def get_game_result_list(self):
+        queryset = self.queryset
+        
+        if self.league_name:
+            queryset = queryset.filter(
+                league__name__iexact=self.league_name
+            )
+        
+        if self.player_name_list:
+            self.player_name_list = self.player_name_list.split(',')
+            for player_name in self.player_name_list:
+                queryset = queryset.filter(
+                    players__profile__name__iexact=player_name
+                )
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        self.league_name = request.query_params.get('league')
+        self.player_name_list = request.query_params.get('player')
+
+        serializer = self.serializer_class(
+            instance=self.get_game_result_list(),
+            many=True,
+            read_only=True
+        )
+        return Response(serializer.data)
 
 
 """
@@ -47,88 +78,16 @@ To show data, do not use above viewset, use PlayerInformationRetrieveView.
 """
 
 
-class RetrievePlayerInformationView(APIView):
-    def get(self, *args, **kwargs):
-        # must be return profile, gameresult, elo.
-        # should use serializer. all return values must be serializer.
-        self.serializer_list = []
-        self.serialized_data = {}
+class RetrieveRankView(APIView):
+    def get(self, request, *args, **kwargs):
+        ranked_queryset = Player.get_rank()
 
-        self.player_name = kwargs['name']
-        self.opponent_name = self.request.query_params.get('versus')
+        # TODO 
+        # rank by league
 
-        self.get_player_profile()
-        self.get_rank_data()
-        self.find_player_rank_from_rank_data()
-        if self.opponent_name:
-            self.get_opponent_profile()
-            self.find_opponent_rank_from_rank_data()
-            self.get_player_game_result_list_related_with_opponent()
-        else:
-            self.get_player_game_result_list()
-
-        return Response(self.serialized_data)
-
-    def get_player_profile(self):
-        player_profile = get_object_or_404(
-            Profile, 
-            name__iexact=self.player_name
+        serializer = RankSerializer(
+            instance=ranked_queryset,
+            many=True,
+            read_only=True
         )
-        self.serialized_data['player_profile'] = \
-            ProfileSerializer(instance=player_profile).data
-
-    def get_opponent_profile(self):
-        opponent_profile = get_object_or_404(
-            Profile, 
-            name__iexact=self.opponent_name
-        )
-        self.serialized_data['opponent_profile'] = \
-            ProfileSerializer(instance=opponent_profile).data
-
-    def get_rank_data(self):
-        self.rank_data = Player.get_rank()
-
-    def find_player_rank_from_rank_data(self):
-        player_rank = next(
-            player_rank for player_rank in self.rank_data \
-                if player_rank['player_name'] == self.player_name
-        )
-        self.serialized_data['player_rank'] = \
-            RankSerializer(
-                instance=player_rank,
-                read_only=True
-            ).data
-    
-    def find_opponent_rank_from_rank_data(self):
-        opponent_rank = next(
-            opponent_rank for opponent_rank in self.rank_data \
-                if opponent_rank['player_name'] == self.opponent_name
-        )
-        self.serialized_data['opponent_rank'] = \
-            RankSerializer(
-                instance=opponent_rank,
-                read_only=True
-            ).data
-
-    def get_player_game_result_list_related_with_opponent(self):
-        game_result_list = \
-            GameResult.filter.get_player_data_related_with_opponent(
-                self.player_name, self.opponent_name
-            )
-        self.serialized_data['game_result_list'] = \
-            GameResultSerializer(
-                instance=game_result_list,
-                many=True,
-                read_only=True
-            ).data
-
-    def get_player_game_result_list(self):
-        game_result_list = \
-            GameResult.filter.get_player_data(self.player_name)
-        
-        self.serialized_data['game_result_list'] = \
-            GameResultSerializer(
-                instance=game_result_list,
-                many=True,
-                read_only=True
-            ).data
+        return Response(serializer.data)
