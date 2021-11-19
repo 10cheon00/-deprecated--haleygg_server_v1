@@ -146,36 +146,57 @@ class Player(models.Model):
             )
         return queryset.values('profile__name').order_by().annotate(
             game_count=Count('id'),
-            win_count=Count('id', filter=Q(win_state=True)),
-            win_versus_protoss_count=Count(
-                'id', filter=Q(win_state=True) & Q(opponent__race='P')),
-            win_versus_terran_count=Count(
-                'id', filter=Q(win_state=True) & Q(opponent__race='T')),
-            win_versus_zerg_count=Count(
-                'id', filter=Q(win_state=True) & Q(opponent__race='Z')),
+            melee_win_count=Count(
+                'id',
+                filter=Q(win_state=True) & 
+                    Q(game_result__game_type="melee")),
+            top_and_bottom_win_count=Count(
+                'id', 
+                filter=Q(win_state=True) &
+                    Q(game_result__game_type='top_and_bottom')),
+            versus_protoss_win_count=Count(
+                'id', 
+                filter=Q(win_state=True) &
+                    Q(opponent__race='P') & 
+                    Q(game_result__game_type="melee")),
+            versus_terran_win_count=Count(
+                'id', 
+                filter=Q(win_state=True) & 
+                    Q(opponent__race='T') & 
+                    Q(game_result__game_type="melee")),
+            versus_zerg_win_count=Count(
+                'id', 
+                filter=Q(win_state=True) &
+                    Q(opponent__race='Z') & 
+                    Q(game_result__game_type="melee")),
             # top_and_bottom_game_count=Count('id', 
             #     filter=Q(game_result__game_type='top_and_bottom')),
-            top_and_bottom_win_count=Count('id', 
-                filter=Q(game_result__game_type='top_and_bottom') &
-                    Q(win_state=True))
         ).annotate(
-            game_count_rank=Window(expression=Rank(), order_by=F('game_count').desc()),
-            win_count_rank=Window(expression=Rank(), order_by=F('win_count').desc()),
-            win_versus_protoss_rank=Window(
-                expression=Rank(), order_by=F('win_versus_protoss_count').desc()),
-            win_versus_terran_rank=Window(
-                expression=Rank(), order_by=F('win_versus_terran_count').desc()),
-            win_versus_zerg_rank=Window(
-                expression=Rank(), order_by=F('win_versus_zerg_count').desc()),
-            top_and_bottom_win_rank=Window(
-                expression=Rank(), order_by=F('top_and_bottom_win_count').desc())
+            game_count_rank=Window(
+                expression=Rank(),
+                order_by=F('game_count').desc()),
+            melee_win_count_rank=Window(
+                expression=Rank(),
+                order_by=F('melee_win_count').desc()),
+            top_and_bottom_win_count_rank=Window(
+                expression=Rank(),
+                order_by=F('top_and_bottom_win_count').desc()),
+            versus_protoss_win_count_rank=Window(
+                expression=Rank(),
+                order_by=F('versus_protoss_win_count').desc()),
+            versus_terran_win_count_rank=Window(
+                expression=Rank(),
+                order_by=F('versus_terran_win_count').desc()),
+            versus_zerg_win_count_rank=Window(
+                expression=Rank(),
+                order_by=F('versus_zerg_win_count').desc())
         ).values(
             'game_count_rank',
-            'win_count_rank',
-            'win_versus_protoss_rank',
-            'win_versus_terran_rank',
-            'win_versus_zerg_rank',
-            'top_and_bottom_win_rank',
+            'melee_win_count_rank',
+            'top_and_bottom_win_count_rank',
+            'versus_protoss_win_count_rank',
+            'versus_terran_win_count_rank',
+            'versus_zerg_win_count_rank',
             player_name=F('profile__name')
         )
 

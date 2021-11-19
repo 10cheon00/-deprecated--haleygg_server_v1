@@ -54,12 +54,11 @@ class GameResultListAPIView(GenericAPIView):
                 queryset = queryset.filter(
                     players__profile__name__iexact=player_name
                 )
-        return queryset
+        return queryset.all()
 
     def get(self, request, *args, **kwargs):
         self.league_name = request.query_params.get('league')
-        self.player_name_list = request.query_params.get('player')
-
+        self.player_name_list = request.query_params.get('players')
         serializer = self.serializer_class(
             instance=self.get_game_result_list(),
             many=True,
@@ -80,10 +79,8 @@ To show data, do not use above viewset, use PlayerInformationRetrieveView.
 
 class RetrieveRankView(APIView):
     def get(self, request, *args, **kwargs):
-        ranked_queryset = Player.get_rank()
-
-        # TODO 
-        # rank by league
+        league = request.query_params.get('league')
+        ranked_queryset = Player.get_rank(league)
 
         serializer = RankSerializer(
             instance=ranked_queryset,

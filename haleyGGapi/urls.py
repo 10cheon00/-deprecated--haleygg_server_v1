@@ -10,9 +10,9 @@ from haleyGGapi.views import RetrieveRankView
 
 
 router = routers.DefaultRouter()
-router.register('leagues', LeagueReadOnlyViewSet, basename='league')
-router.register('maps', MapReadOnlyViewSet, basename='map')
-router.register('profiles', ProfileReadOnlyViewSet, basename='profile')
+router.register('leagues', LeagueReadOnlyViewSet, basename='leagues')
+router.register('maps', MapReadOnlyViewSet, basename='maps')
+router.register('profiles', ProfileReadOnlyViewSet, basename='profiles')
 
 urlpatterns = [
     path('', include(router.urls)),

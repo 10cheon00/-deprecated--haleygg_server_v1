@@ -57,8 +57,8 @@ class GameResultSerializer(ModelSerializer):
 class RankSerializer(Serializer):
     player_name = serializers.CharField(max_length=30)
     game_count_rank = serializers.IntegerField()
-    win_count_rank = serializers.IntegerField()
-    win_versus_protoss_rank = serializers.IntegerField()
-    win_versus_terran_rank = serializers.IntegerField()
-    win_versus_zerg_rank = serializers.IntegerField()
-    top_and_bottom_win_rank = serializers.IntegerField()
+    melee_win_count_rank = serializers.IntegerField()
+    top_and_bottom_win_count_rank = serializers.IntegerField()
+    versus_protoss_win_count_rank = serializers.IntegerField()
+    versus_terran_win_count_rank = serializers.IntegerField()
+    versus_zerg_win_count_rank = serializers.IntegerField()
