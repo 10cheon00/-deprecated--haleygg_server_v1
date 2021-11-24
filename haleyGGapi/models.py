@@ -1,12 +1,9 @@
 from django.db import models
 from django.db.models import Count
-from django.db.models import Q
-from django.db.models.expressions import F
-from django.db.models.expressions import Window
-from django.db.models.functions import Rank
 from django.utils import timezone
 
 from haleyGGapi.managers import GameResultRelationshipManager
+from haleyGGapi.managers import StatisticsManager
 
 
 class League(models.Model):
@@ -119,10 +116,14 @@ class Player(models.Model):
     opponent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
-        null=True
+        null=True,
+        blank=True
     )
     race = models.CharField(max_length=10, choices=RACE_LIST, default='P')
     win_state = models.BooleanField(default=False)
+
+    objects = models.Manager()
+    statistics = StatisticsManager()
 
     class Meta:
         ordering = (
@@ -136,69 +137,7 @@ class Player(models.Model):
             win_count=Count("id")
         )
         return f'{self.profile} ({self.race}) | {self.game_result}'
-
-    @classmethod
-    def get_rank(cls, league_name=None):
-        queryset = cls.objects.all()
-        if league_name:
-            queryset = cls.objects.filter(
-                game_result__league__name__iexact=league_name
-            )
-        return queryset.values('profile__name').order_by().annotate(
-            game_count=Count('id'),
-            melee_win_count=Count(
-                'id',
-                filter=Q(win_state=True) & 
-                    Q(game_result__game_type="melee")),
-            top_and_bottom_win_count=Count(
-                'id', 
-                filter=Q(win_state=True) &
-                    Q(game_result__game_type='top_and_bottom')),
-            versus_protoss_win_count=Count(
-                'id', 
-                filter=Q(win_state=True) &
-                    Q(opponent__race='P') & 
-                    Q(game_result__game_type="melee")),
-            versus_terran_win_count=Count(
-                'id', 
-                filter=Q(win_state=True) & 
-                    Q(opponent__race='T') & 
-                    Q(game_result__game_type="melee")),
-            versus_zerg_win_count=Count(
-                'id', 
-                filter=Q(win_state=True) &
-                    Q(opponent__race='Z') & 
-                    Q(game_result__game_type="melee")),
-            # top_and_bottom_game_count=Count('id', 
-            #     filter=Q(game_result__game_type='top_and_bottom')),
-        ).annotate(
-            game_count_rank=Window(
-                expression=Rank(),
-                order_by=F('game_count').desc()),
-            melee_win_count_rank=Window(
-                expression=Rank(),
-                order_by=F('melee_win_count').desc()),
-            top_and_bottom_win_count_rank=Window(
-                expression=Rank(),
-                order_by=F('top_and_bottom_win_count').desc()),
-            versus_protoss_win_count_rank=Window(
-                expression=Rank(),
-                order_by=F('versus_protoss_win_count').desc()),
-            versus_terran_win_count_rank=Window(
-                expression=Rank(),
-                order_by=F('versus_terran_win_count').desc()),
-            versus_zerg_win_count_rank=Window(
-                expression=Rank(),
-                order_by=F('versus_zerg_win_count').desc())
-        ).values(
-            'game_count_rank',
-            'melee_win_count_rank',
-            'top_and_bottom_win_count_rank',
-            'versus_protoss_win_count_rank',
-            'versus_terran_win_count_rank',
-            'versus_zerg_win_count_rank',
-            player_name=F('profile__name')
-        )
+    
 
 
 
