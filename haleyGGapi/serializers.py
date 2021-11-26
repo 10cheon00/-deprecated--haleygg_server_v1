@@ -1,6 +1,4 @@
 from rest_framework import serializers
-from rest_framework.serializers import Serializer
-from rest_framework.serializers import ModelSerializer
 
 from haleyGGapi.models import League
 from haleyGGapi.models import Map
@@ -9,25 +7,25 @@ from haleyGGapi.models import Player
 from haleyGGapi.models import GameResult
 
 
-class LeagueSerializer(ModelSerializer):
+class LeagueSerializer(serializers.ModelSerializer):
     class Meta:
         model = League
         fields = ('id', 'name', 'type')
 
 
-class MapSerializer(ModelSerializer):
+class MapSerializer(serializers.ModelSerializer):
     class Meta:
         model = Map
         fields = ('id', 'name', 'type')
 
 
-class ProfileSerializer(ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ('id', 'name', 'most_race', 'signup_date', 'career')
 
 
-class PlayerSerializer(ModelSerializer):
+class PlayerSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='profile.name')
 
     class Meta:
@@ -35,7 +33,7 @@ class PlayerSerializer(ModelSerializer):
         fields = ('name', 'race', 'win_state')
 
 
-class GameResultSerializer(ModelSerializer):
+class GameResultSerializer(serializers.ModelSerializer):
     league = serializers.CharField(source='league.name')
     map = serializers.CharField(source='map.name')
     players = PlayerSerializer(many=True, read_only=True)
@@ -54,11 +52,42 @@ class GameResultSerializer(ModelSerializer):
         )
 
 
-class RankSerializer(Serializer):
-    player_name = serializers.CharField(max_length=30)
-    game_count_rank = serializers.IntegerField()
-    win_count_rank = serializers.IntegerField()
-    win_versus_protoss_rank = serializers.IntegerField()
-    win_versus_terran_rank = serializers.IntegerField()
-    win_versus_zerg_rank = serializers.IntegerField()
-    top_and_bottom_win_rank = serializers.IntegerField()
+class NumberOfGamesAndWinsSerializer(serializers.Serializer):
+    melee_game_count = serializers.IntegerField()
+    melee_win_count = serializers.IntegerField()
+    top_and_bottom_game_count = serializers.IntegerField()
+    top_and_bottom_win_count = serializers.IntegerField()
+
+
+class NumberOfGamesAndWinsByEachRaceSerializer(serializers.Serializer):
+    pvp_game_count = serializers.IntegerField()
+    pvt_game_count = serializers.IntegerField()
+    pvz_game_count = serializers.IntegerField()
+    tvp_game_count = serializers.IntegerField()
+    tvt_game_count = serializers.IntegerField()
+    tvz_game_count = serializers.IntegerField()
+    zvp_game_count = serializers.IntegerField()
+    zvt_game_count = serializers.IntegerField()
+    zvz_game_count = serializers.IntegerField()
+    
+    pvp_win_count = serializers.IntegerField()
+    pvt_win_count = serializers.IntegerField()
+    pvz_win_count = serializers.IntegerField()
+    tvp_win_count = serializers.IntegerField()
+    tvt_win_count = serializers.IntegerField()
+    tvz_win_count = serializers.IntegerField()
+    zvp_win_count = serializers.IntegerField()
+    zvt_win_count = serializers.IntegerField()
+    zvz_win_count = serializers.IntegerField()
+
+
+class StatisticsSerializer(
+    NumberOfGamesAndWinsSerializer,
+    NumberOfGamesAndWinsByEachRaceSerializer
+):
+    player_name = serializers.CharField(max_length=50)
+
+
+class WinRankingSerializer(serializers.Serializer):
+    melee_win_count_rank = serializers.IntegerField()
+    top_and_bottom_win_count_rank = serializers.IntegerField()

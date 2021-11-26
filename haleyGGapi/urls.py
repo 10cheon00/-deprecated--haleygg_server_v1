@@ -6,16 +6,18 @@ from haleyGGapi.views import LeagueReadOnlyViewSet
 from haleyGGapi.views import MapReadOnlyViewSet
 from haleyGGapi.views import GameResultListAPIView
 from haleyGGapi.views import ProfileReadOnlyViewSet
-from haleyGGapi.views import RetrieveRankView
+from haleyGGapi.views import RetrieveStatisticsView
+from haleyGGapi.views import RetrieveRankingView
 
 
 router = routers.DefaultRouter()
-router.register('leagues', LeagueReadOnlyViewSet, basename='league')
-router.register('maps', MapReadOnlyViewSet, basename='map')
-router.register('profiles', ProfileReadOnlyViewSet, basename='profile')
+router.register('leagues', LeagueReadOnlyViewSet, basename='leagues')
+router.register('maps', MapReadOnlyViewSet, basename='maps')
+router.register('profiles', ProfileReadOnlyViewSet, basename='profiles')
 
 urlpatterns = [
     path('', include(router.urls)),
     path('game-results', GameResultListAPIView.as_view()),
-    path('rank', RetrieveRankView.as_view())
+    path('statistics', RetrieveStatisticsView.as_view()),
+    path('ranking', RetrieveRankingView.as_view()),
 ]
