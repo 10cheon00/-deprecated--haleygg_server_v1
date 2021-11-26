@@ -8,6 +8,7 @@ from haleyGGapi.serializers import MapSerializer
 from haleyGGapi.serializers import ProfileSerializer
 from haleyGGapi.serializers import GameResultSerializer
 from haleyGGapi.serializers import StatisticsSerializer
+from haleyGGapi.serializers import WinRankingSerializer
 from haleyGGapi.models import League
 from haleyGGapi.models import Player
 from haleyGGapi.models import Map
@@ -77,19 +78,34 @@ To show data, do not use above viewset, use PlayerInformationRetrieveView.
 class RetrieveStatisticsView(APIView):
     def get(self, request):
         self.serialized_data = None
-        self.parse_params(request)
-        self.serialize()
+        self.parseParams(request)
 
-        return Response(self.serialized_data)
+        queryset = Player.statistics.get_statistics_queryset(
+            self.league_name, 
+            self.player_name)
 
-    def parse_params(self, request):
+        return Response(
+            StatisticsSerializer(
+                instance=queryset,
+                many=True,
+                read_only=True
+            ).data)
+
+    def parseParams(self, request):
         self.league_name = request.query_params.get('league')
-        self.category = request.query_params.get('category')
+        self.player_name = request.query_params.get('player')
+        
 
-    def serialize(self):
-        queryset = Player.statistics.get_queryset(self.league_name)
-        self.serialized_data = StatisticsSerializer(
-            instance=queryset,
-            many=True,
-            read_only=True
-        ).data
+
+class RetrieveRankingView(APIView):
+    def get(self, request):
+        self.serialized_data = None
+        self.league_name = request.query_params.get('league')
+        queryset = Player.ranking.get_ranking_queryset(self.league_name)
+
+        return Response(
+            WinRankingSerializer(
+                instance=queryset,
+                many=True,
+                read_only=True
+            ).data)

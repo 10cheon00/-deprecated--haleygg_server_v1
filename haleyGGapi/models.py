@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from haleyGGapi.managers import GameResultRelationshipManager
 from haleyGGapi.managers import StatisticsManager
+from haleyGGapi.managers import RankingManager
 
 
 class League(models.Model):
@@ -124,6 +125,7 @@ class Player(models.Model):
 
     objects = models.Manager()
     statistics = StatisticsManager()
+    ranking = RankingManager()
 
     class Meta:
         ordering = (
