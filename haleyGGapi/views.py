@@ -50,8 +50,7 @@ class GameResultListAPIView(ListAPIView):
             )
 
         if self.player_name_list:
-            self.player_name_list = self.player_name_list.split(',')
-            for player_name in self.player_name_list:
+            for player_name in self.player_name_list.split(','):
                 queryset = queryset.filter(
                     players__profile__name__iexact=player_name
                 )
