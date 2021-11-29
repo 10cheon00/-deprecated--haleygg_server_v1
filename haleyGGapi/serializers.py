@@ -91,3 +91,4 @@ class StatisticsSerializer(
 class WinRankingSerializer(serializers.Serializer):
     melee_win_count_rank = serializers.IntegerField()
     top_and_bottom_win_count_rank = serializers.IntegerField()
+    player_name = serializers.CharField(max_length=50)
