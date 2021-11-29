@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 
 from haleyGGapi.serializers import LeagueSerializer
@@ -20,25 +20,28 @@ class LeagueReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = League.objects.all()
     serializer_class = LeagueSerializer
     lookup_field = 'name'
+    paginator = None
 
 
 class MapReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Map.objects.all()
     serializer_class = MapSerializer
     lookup_field = 'name'
+    paginator = None
 
 
 class ProfileReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     lookup_field = 'name'
+    paginator = None
 
 
-class GameResultListAPIView(GenericAPIView):
+class GameResultListAPIView(ListAPIView):
     queryset = GameResult.relationship.get_queryset()
     serializer_class = GameResultSerializer
 
-    def get_game_result_list(self):
+    def get_queryset(self):
         queryset = self.queryset
 
         if self.league_name:
@@ -54,15 +57,10 @@ class GameResultListAPIView(GenericAPIView):
                 )
         return queryset.all()
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request):
         self.league_name = request.query_params.get('league')
         self.player_name_list = request.query_params.get('players')
-        serializer = self.serializer_class(
-            instance=self.get_game_result_list(),
-            many=True,
-            read_only=True
-        )
-        return Response(serializer.data)
+        return self.list(self, request)
 
 
 """
@@ -95,7 +93,6 @@ class RetrieveStatisticsView(APIView):
         self.league_name = request.query_params.get('league')
         self.player_name = request.query_params.get('player')
         
-
 
 class RetrieveRankingView(APIView):
     def get(self, request):
