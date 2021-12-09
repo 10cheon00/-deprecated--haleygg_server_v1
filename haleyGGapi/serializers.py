@@ -52,14 +52,23 @@ class GameResultSerializer(serializers.ModelSerializer):
         )
 
 
-class NumberOfGamesAndWinsSerializer(serializers.Serializer):
+class MeleeRecordSerializer(serializers.Serializer):
     melee_game_count = serializers.IntegerField()
     melee_win_count = serializers.IntegerField()
+    melee_lose_count = serializers.IntegerField()
+
+
+class TopAndBottomRecordSerializer(serializers.Serializer):
     top_and_bottom_game_count = serializers.IntegerField()
     top_and_bottom_win_count = serializers.IntegerField()
+    top_and_bottom_lose_count = serializers.IntegerField()
 
 
-class NumberOfGamesAndWinsByEachRaceSerializer(serializers.Serializer):
+class TotalRecordSerializer(MeleeRecordSerializer,TopAndBottomRecordSerializer):
+    pass
+
+
+class TotalRecordByEachRaceSerializer(serializers.Serializer):
     pvp_game_count = serializers.IntegerField()
     pvt_game_count = serializers.IntegerField()
     pvz_game_count = serializers.IntegerField()
@@ -82,8 +91,8 @@ class NumberOfGamesAndWinsByEachRaceSerializer(serializers.Serializer):
 
 
 class StatisticsSerializer(
-    NumberOfGamesAndWinsSerializer,
-    NumberOfGamesAndWinsByEachRaceSerializer
+    TotalRecordSerializer,
+    TotalRecordByEachRaceSerializer
 ):
     player_name = serializers.CharField(max_length=50)
 

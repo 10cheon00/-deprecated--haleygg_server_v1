@@ -17,7 +17,7 @@ router.register('maps', MapReadOnlyViewSet, basename='maps')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('profiles', ListProfileAPIView.as_view()),
+    path('profiles', ListProfileAPIView.as_view(), name='profiles'),
     path('profiles/ranks', RetrieveRankingAPIView.as_view()),
     path('profiles/<str:name__iexact>', RetrieveProfileAPIView.as_view()),
     path('profiles/<str:name__iexact>/statistics', RetrieveStatisticsAPIView.as_view()),
